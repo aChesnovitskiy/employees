@@ -1,8 +1,11 @@
 package com.achesnovitskiy.empoyees.screens.employees
 
+import android.app.Application
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.achesnovitskiy.empoyees.R
@@ -15,39 +18,25 @@ import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.activity_employee_list.*
 
-class EmployeeListActivity : AppCompatActivity(), EmployeeListView {
+class EmployeeListActivity : AppCompatActivity() {
     private val employeeAdapter: EmployeeAdapter by lazy { EmployeeAdapter() }
-    private val presenter: EmployeeListPresenter by lazy { EmployeeListPresenter(this) }
+    private val viewModel: EmployeeViewModel by lazy {
+        val vmFactory = EmployeeViewModel.ViewModelFactory(Application())
+        ViewModelProvider(this, vmFactory).get(EmployeeViewModel::class.java)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_employee_list)
 
         val divider = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-
         with(rv_employees) {
             adapter = employeeAdapter
             layoutManager = LinearLayoutManager(this@EmployeeListActivity)
             addItemDecoration(divider)
         }
 
-        presenter.loadData()
-    }
-
-    override fun onDestroy() {
-        presenter.disposeDisposable()
-        super.onDestroy()
-    }
-
-    override fun showData(data: List<Employee>) {
-        employeeAdapter.setEmlpoyees(data)
-    }
-
-    override fun showError(error: Throwable) {
-        Toast.makeText(
-            this,
-            "Ошибка получения данных:\n${error.printStackTrace()}",
-            Toast.LENGTH_SHORT
-        ).show()
+        viewModel.employees?.observe(this, Observer { employeeAdapter.setEmlpoyees(it) })
+        viewModel.loadData()
     }
 }
