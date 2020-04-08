@@ -2,10 +2,7 @@ package com.achesnovitskiy.empoyees.screens.employees
 
 import android.app.Application
 import android.os.AsyncTask
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.*
 import com.achesnovitskiy.empoyees.App
 import com.achesnovitskiy.empoyees.api.ApiFactory
 import com.achesnovitskiy.empoyees.data.AppDatabase
@@ -18,9 +15,36 @@ import io.reactivex.schedulers.Schedulers
 class EmployeeViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getInstance(App.applicationContext())
     val employees: LiveData<List<Employee>>? = database?.employeeDao?.getAllEmployees()
+    private var errors: MutableLiveData<Throwable>? = null
 
     private lateinit var disposable: Disposable
     private var compositeDisposable = CompositeDisposable()
+
+    fun loadData() {
+        val apiFactory = ApiFactory
+        val apiService = apiFactory.getApiService()
+
+        disposable = apiService.getEmployees()
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(
+                { result ->
+                    deleteAllEmployees()
+                    insertEmployees(result.employees)
+                },
+                { error ->
+                    errors?.value = error
+                }
+            )
+
+        compositeDisposable.add(disposable)
+    }
+
+    fun getErrors() = errors
+
+    fun clearErrors() {
+        errors = null
+    }
 
     private fun insertEmployees(employees: List<Employee>) {
         InsertEmployeesTask(database).execute(employees)
@@ -44,24 +68,6 @@ class EmployeeViewModel(application: Application) : AndroidViewModel(application
         override fun doInBackground(vararg params: List<Unit>?) {
             database?.employeeDao?.deleteAllEmployees()
         }
-    }
-
-    fun loadData() {
-        val apiFactory = ApiFactory
-        val apiService = apiFactory.getApiService()
-
-        disposable = apiService.getEmployees()
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { result ->
-                    deleteAllEmployees()
-                    insertEmployees(result.employees)
-                },
-                { error ->  }
-            )
-
-        compositeDisposable.add(disposable)
     }
 
     override fun onCleared() {

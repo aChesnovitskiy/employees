@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.achesnovitskiy.empoyees.pojo.Employee
 
-@Database(entities = [Employee::class], version = 1, exportSchema = false)
+@Database(entities = [Employee::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract val employeeDao: EmployeeDao
 
@@ -19,7 +19,8 @@ abstract class AppDatabase : RoomDatabase() {
         fun getInstance(context: Context): AppDatabase? {
             if (instance == null) {
                 synchronized(LOCK) {
-                    instance = Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME).build()
+                    instance = Room.databaseBuilder(context, AppDatabase::class.java, DB_NAME)
+                        .fallbackToDestructiveMigration().build()
                 }
             }
             return instance

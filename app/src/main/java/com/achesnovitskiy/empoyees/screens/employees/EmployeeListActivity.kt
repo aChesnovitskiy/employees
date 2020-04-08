@@ -3,6 +3,7 @@ package com.achesnovitskiy.empoyees.screens.employees
 import android.app.Application
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -36,7 +37,29 @@ class EmployeeListActivity : AppCompatActivity() {
             addItemDecoration(divider)
         }
 
-        viewModel.employees?.observe(this, Observer { employeeAdapter.setEmlpoyees(it) })
+        viewModel.employees?.observe(
+            this,
+            Observer {
+                employeeAdapter.setEmlpoyees(it)
+                for (employee in it) {
+                    val specialities = employee.specialty
+                    if (specialities != null) {
+                        for (speciality in specialities) {
+                            Log.d("My_speciality", speciality.name)
+                        }
+                    }
+                }
+            }
+        )
+        viewModel.getErrors()?.observe(
+            this,
+            Observer {
+                if (it != null) {
+                    Toast.makeText(this, "Error: $it", Toast.LENGTH_SHORT).show()
+                    viewModel.clearErrors()
+                }
+            }
+        )
         viewModel.loadData()
     }
 }
